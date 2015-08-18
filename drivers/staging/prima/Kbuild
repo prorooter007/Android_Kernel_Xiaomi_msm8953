@@ -778,7 +778,7 @@ CDEFINES += -DEXISTS_MSM_SMSM
 endif
 
 # Fix build for GCC 4.7
-EXTRA_CFLAGS += $(call cc-disable-warning, maybe-uninitialized)
+EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function -Wno-unused-variable
 
 # Silence Clang warning
 EXTRA_CFLAGS += $(call cc-disable-warning, enum-conversion)
