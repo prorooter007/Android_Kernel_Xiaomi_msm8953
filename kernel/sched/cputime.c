@@ -725,10 +725,10 @@ static cputime_t vtime_delta(struct task_struct *tsk)
 {
 	unsigned long now = READ_ONCE(jiffies);
 
-	if (time_before(now, (unsigned long)tsk->vtime_snap))
+	if (time_before(now, (unsigned long)tsk->vtime_starttime))
 		return 0;
 
-	return jiffies_to_cputime(now - tsk->vtime_snap);
+	return jiffies_to_cputime(now - tsk->vtime_starttime);
 }
 
 static cputime_t get_vtime_delta(struct task_struct *tsk)
@@ -743,10 +743,10 @@ static cputime_t get_vtime_delta(struct task_struct *tsk)
 	 * elapsed time. Limit account_other_time to prevent rounding
 	 * errors from causing elapsed vtime to go negative.
 	 */
-	delta = jiffies_to_cputime(now - tsk->vtime_snap);
+	delta = jiffies_to_cputime(now - tsk->vtime_starttime);
 	other = account_other_time(delta);
-	WARN_ON_ONCE(tsk->vtime_snap_whence == VTIME_INACTIVE);
-	tsk->vtime_snap = now;
+	WARN_ON_ONCE(tsk->vtime_state == VTIME_INACTIVE);
+	tsk->vtime_starttime = now;
 
 	return delta - other;
 }
@@ -792,7 +792,7 @@ void vtime_guest_enter(struct task_struct *tsk)
 {
 	/*
 	 * The flags must be updated under the lock with
-	 * the vtime_snap flush and update.
+	 * the vtime_starttime flush and update.
 	 * That enforces a right ordering and update sequence
 	 * synchronization against the reader (task_gtime())
 	 * that can thus safely catch up with a tickless delta.
@@ -824,12 +824,12 @@ void vtime_account_idle(struct task_struct *tsk)
 void arch_vtime_task_switch(struct task_struct *prev)
 {
 	write_seqcount_begin(&prev->vtime_seqcount);
-	prev->vtime_snap_whence = VTIME_INACTIVE;
+	prev->vtime_state = VTIME_INACTIVE;
 	write_seqcount_end(&prev->vtime_seqcount);
 
 	write_seqcount_begin(&current->vtime_seqcount);
-	current->vtime_snap_whence = VTIME_SYS;
-	current->vtime_snap = jiffies;
+	current->vtime_state = VTIME_SYS;
+	current->vtime_starttime = jiffies;
 	write_seqcount_end(&current->vtime_seqcount);
 }
 
@@ -839,8 +839,8 @@ void vtime_init_idle(struct task_struct *t, int cpu)
 
 	local_irq_save(flags);
 	write_seqcount_begin(&t->vtime_seqcount);
-	t->vtime_snap_whence = VTIME_SYS;
-	t->vtime_snap = jiffies;
+	t->vtime_state = VTIME_SYS;
+	t->vtime_starttime = jiffies;
 	write_seqcount_end(&t->vtime_seqcount);
 	local_irq_restore(flags);
 }
@@ -857,7 +857,7 @@ cputime_t task_gtime(struct task_struct *t)
 		seq = read_seqcount_begin(&t->vtime_seqcount);
 
 		gtime = t->gtime;
-		if (t->vtime_snap_whence == VTIME_SYS && t->flags & PF_VCPU)
+		if (t->vtime_state == VTIME_SYS && t->flags & PF_VCPU)
 			gtime += vtime_delta(t);
 
 	} while (read_seqcount_retry(&t->vtime_seqcount, seq));
@@ -891,7 +891,7 @@ fetch_task_cputime(struct task_struct *t,
 			*s_dst = *s_src;
 
 		/* Task is sleeping, nothing to add */
-		if (t->vtime_snap_whence == VTIME_INACTIVE ||
+		if (t->vtime_state == VTIME_INACTIVE ||
 		    is_idle_task(t))
 			continue;
 
@@ -901,10 +901,10 @@ fetch_task_cputime(struct task_struct *t,
 		 * Task runs either in user or kernel space, add pending nohz time to
 		 * the right place.
 		 */
-		if (t->vtime_snap_whence == VTIME_USER || t->flags & PF_VCPU) {
+		if (t->vtime_state == VTIME_USER || t->flags & PF_VCPU) {
 			*udelta = delta;
 		} else {
-			if (t->vtime_snap_whence == VTIME_SYS)
+			if (t->vtime_state == VTIME_SYS)
 				*sdelta = delta;
 		}
 	} while (read_seqcount_retry(&t->vtime_seqcount, seq));
