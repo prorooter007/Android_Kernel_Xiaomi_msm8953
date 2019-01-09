@@ -4153,7 +4153,7 @@ tSirRetStatus limStaSendAddBssPreAssoc( tpAniSirGlobal pMac, tANI_U8 updateEntry
         retCode = eSIR_MEM_ALLOC_FAILED;
         goto returnFailure;
     }
-    
+
     vos_mem_set((tANI_U8 *) pAddBssParams, sizeof( tAddBssParams ), 0);
 
 
@@ -4186,7 +4186,7 @@ tSirRetStatus limStaSendAddBssPreAssoc( tpAniSirGlobal pMac, tANI_U8 updateEntry
     pAddBssParams->operMode = BSS_OPERATIONAL_MODE_STA;
 
     pAddBssParams->beaconInterval = bssDescription->beaconInterval;
-    
+
     pAddBssParams->dtimPeriod = pBeaconStruct->tim.dtimPeriod;
     pAddBssParams->updateBss = updateEntry;
 
@@ -4202,7 +4202,7 @@ tSirRetStatus limStaSendAddBssPreAssoc( tpAniSirGlobal pMac, tANI_U8 updateEntry
                  pBeaconStruct->supportedRates.rate, pBeaconStruct->supportedRates.numRates);
 
     pAddBssParams->nwType = bssDescription->nwType;
-    
+
     pAddBssParams->shortSlotTimeSupported = (tANI_U8)pBeaconStruct->capabilityInfo.shortSlotTime; 
     pAddBssParams->llaCoexist = (tANI_U8) psessionEntry->beaconParams.llaCoexist;
     pAddBssParams->llbCoexist = (tANI_U8) psessionEntry->beaconParams.llbCoexist;
