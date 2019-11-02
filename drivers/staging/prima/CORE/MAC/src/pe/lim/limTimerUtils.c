@@ -1955,7 +1955,7 @@ limDeactivateAndChangeTimer(tpAniSirGlobal pMac, tANI_U32 timerId)
         }
         break;
 
-#ifdef WLAN_FEATURE_SAE
+#ifdef WLAN_FEATURE_LFR_MBB
     case eLIM_AUTH_SAE_TIMER:
         if (tx_timer_deactivate(&pMac->lim.limTimers.sae_auth_timer)
             != TX_SUCCESS) {
