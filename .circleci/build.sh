@@ -1,13 +1,15 @@
 #!/bin/bash
 echo "Cloning dependencies"
-git clone --depth=1 -b a11stableperf https://github.com/prorooter007/Android_Kernel_Xiaomi_msm8953 kernel
+git clone --depth=1 -b lightlosreb https://github.com/prorooter007/LightningKernel_Xiaomi_msm8953 kernel
 cd kernel
 git clone --depth=1 -b master https://github.com/kdrag0n/proton-clang clang
 git clone https://github.com/prorooter007/AnyKernel3 -b tissot --depth=1 AnyKernel
 echo "Done"
 KERNEL_DIR=$(pwd)
 REPACK_DIR="${KERNEL_DIR}/AnyKernel"
-IMAGE="${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb"
+IMAGE="${KERNEL_DIR}/out/arch/arm64/boot/Image.gz"
+DTB_T="${KERNEL_DIR}/out/arch/arm64/boot/dts/qcom/msm8953-qrd-sku3-tissot-treble.dtb"
+DTB="${KERNEL_DIR}/out/arch/arm64/boot/dts/qcom/msm8953-qrd-sku3-tissot-nontreble.dtb"
 TANGGAL=$(date +"%Y%m%d-%H")
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 export PATH="$(pwd)/clang/bin:$PATH"
@@ -17,7 +19,7 @@ export KBUILD_BUILD_USER=prorooter007
 export KBUILD_BUILD_HOST=circleci
 # Compile plox
 function compile() {
-    make -j$(nproc) O=out ARCH=arm64 tissot_defconfig
+    make -j$(nproc) O=out ARCH=arm64 lightning-tissot_defconfig
     make -j$(nproc) O=out \
                     ARCH=arm64 \
                       CC=clang \
@@ -25,12 +27,27 @@ function compile() {
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
 
     cd $REPACK_DIR
+    mkdir kernel
+    mkdir dtb-treble
+    mkdir dtb-nontreble
 
     if ! [ -a "$IMAGE" ]; then
         exit 1
         echo "There are some issues"
     fi
-    cp $IMAGE $REPACK_DIR/
+    cp $IMAGE $REPACK_DIR/kernel/
+
+    if ! [ -a "$DTB" ]; then
+        exit 1
+        echo "There are some issues"
+    fi
+    cp $DTB $REPACK_DIR/dtb-nontreble/
+
+    if ! [ -a "$DTB_T" ]; then
+        exit 1
+        echo "There are some issues"
+    fi
+    cp $DTB_T $REPACK_DIR/dtb-treble/
 }
 # Zipping
 function zipping() {
